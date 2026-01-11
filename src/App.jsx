@@ -66,7 +66,9 @@ function App() {
       <Header title={"expenseTracker"}></Header>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Dashboard expenses = {expenses}/>
-        <Chart expenses={expenses}/>
+        {filteredExpenses.length > 0 && (
+          <Chart expenses={filteredExpenses}/>
+        )}
         <FilterBar category={category} setCategory={setCategory} searchText={searchText} setSearchText={setSearchText}/>
         {
           filteredExpenses.length === 0 && (searchText || category) 
