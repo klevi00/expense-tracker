@@ -14,7 +14,7 @@ function ExpenseItem({expenseItem, isEditing, onSave, onCancel, onDelete, onEdit
                     <div className="flex-1">
                         <h3 className="card-title text-lg mb-2">{expenseItem.description}</h3>
                         <div className="flex flex-wrap gap-4 text-sm">
-                            <div className="badge badge-primary badge-lg">${parseFloat(expenseItem.amount).toFixed(2)}</div>
+                            <div className="badge badge-primary badge-lg">{parseFloat(expenseItem.amount).toFixed(2)}€</div>
                             <div className="badge badge-secondary badge-lg">{expenseItem.category}</div>
                             <div className="text-base-content/70">{dateFormatted}</div>
                         </div>
