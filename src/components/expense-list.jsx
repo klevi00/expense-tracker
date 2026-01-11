@@ -17,7 +17,7 @@ function ExpenseList({expenses, editingId, onDelete, onSave, onCancel, onEdit}){
     return (
         <ul className="space-y-4 mb-8">
             {
-                expenses.map(item => {
+                sortedExpenses.map(item => {
                     return <ExpenseItem key={item.id} expenseItem = {item} isEditing = {editingId === item.id} onSave={onSave} onCancel={onCancel} onEdit={onEdit} onDelete={onDelete}/>;
                 })
             }
