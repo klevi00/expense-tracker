@@ -3,7 +3,6 @@ import { CATEGORIES } from "../data/expense"
 import ChartDataLabels from 'chartjs-plugin-datalabels'
 import PieChart from "./pieChart"
 import BarChart from "./barChart";
-import LineBar from "./lineBar";
 
 
 
@@ -32,9 +31,6 @@ function Chart({ expenses }) {
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
             <BarChart values={values} nordColors={nordColors}/>
             <PieChart values={values} nordColors={nordColors}/>
-            <div className="lg:col-span-2">
-                <LineBar expenses={expenses} nordColors={nordColors} />
-            </div>
         </div>
     )
 }
