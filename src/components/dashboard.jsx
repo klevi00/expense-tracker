@@ -14,7 +14,7 @@ function Dashboard({ expenses }) {
     }, {});
     //chiavi-valori 
     return (
-        <div className="mt-20 mb-8">
+        <div className="mb-6">
             <div className="stats stats-vertical lg:stats-horizontal shadow w-full mb-6">
                 <div className="stat">
                     <div className="stat-title">Totale Spese</div>

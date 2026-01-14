@@ -65,11 +65,21 @@ function App() {
     <div className="min-h-screen bg-base-200">
       <Header title={"expenseTracker"}></Header>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Dashboard Overview */}
         <Dashboard expenses = {expenses}/>
+        
+        {/* Quick Add Form - Easy access at the top */}
+        <ExpenseForm setExpenses={setExpenses}></ExpenseForm>
+        
+        {/* Filter Controls */}
+        <FilterBar category={category} setCategory={setCategory} searchText={searchText} setSearchText={setSearchText}/>
+        
+        {/* Charts Visualization */}
         {filteredExpenses.length > 0 && (
           <Chart expenses={filteredExpenses}/>
         )}
-        <FilterBar category={category} setCategory={setCategory} searchText={searchText} setSearchText={setSearchText}/>
+        
+        {/* Expense List or Empty State */}
         {
           filteredExpenses.length === 0 && (searchText || category) 
           ?
@@ -80,7 +90,6 @@ function App() {
           : 
           <ExpenseList expenses={filteredExpenses} onDelete={deleteExpense} onSave={saveExpense} onEdit={editExpense} editingId={editingId} onCancel = {cancelEdit}/>
         }
-        <ExpenseForm setExpenses={setExpenses}></ExpenseForm>
       </div>
     </div>
   )
