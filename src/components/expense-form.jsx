@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { CATEGORIES } from "../data/expense";
+import { pb } from "../lib/pocketbase";
 
-function ExpenseForm({ setExpenses }) {
+function ExpenseForm({ onExpenseAdded }) {
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
     const [category, setCategory] = useState("");
     const [isOpen, setIsOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!description.trim()) {
@@ -25,19 +27,39 @@ function ExpenseForm({ setExpenses }) {
             return;
         }
 
-        const newExpense = {
-            id: Date.now(),
-            description,
-            amount,
-            category,
-            createdAt: new Date()
-        };
+        setIsLoading(true);
+        try {
+            const newExpense = {
+                description,
+                amount: Number(amount),
+                category
+            };
 
-        setExpenses((prevExpenses) => [...prevExpenses, newExpense]);
-        setDescription("");
-        setCategory("");
-        setAmount("");
-        setIsOpen(false); // Collapse after successful submission
+            await pb.collection('expenses').create(newExpense);
+            
+            // Refresh the expenses list
+            if (onExpenseAdded) {
+                onExpenseAdded();
+            }
+            
+            setDescription("");
+            setCategory("");
+            setAmount("");
+            setIsOpen(false);
+        } catch (err) {
+            console.error('Errore nel salvataggio della spesa:', err);
+            let errorMessage = 'Errore nel salvataggio della spesa.';
+            if (err.status === 404) {
+                errorMessage = 'La collezione "expenses" non esiste in PocketBase. Crealo prima di aggiungere spese.';
+            } else if (err.status === 0) {
+                errorMessage = 'Impossibile connettersi a PocketBase. Verifica che il server sia avviato.';
+            } else if (err.message) {
+                errorMessage = `Errore: ${err.message}`;
+            }
+            alert(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     return (
@@ -131,11 +153,20 @@ function ExpenseForm({ setExpenses }) {
                             >
                                 Annulla
                             </button>
-                            <button type="submit" className="btn btn-primary">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                                </svg>
-                                Aggiungi Spesa
+                            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <span className="loading loading-spinner loading-sm"></span>
+                                        Salvataggio...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Aggiungi Spesa
+                                    </>
+                                )}
                             </button>
                         </div>
                     </form>

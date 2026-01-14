@@ -1,6 +1,7 @@
 import EditExpenseForm from "./edit-expense-form";
 function ExpenseItem({expenseItem, isEditing, onSave, onCancel, onDelete, onEdit}) {
-    const dateFormatted = new Date (expenseItem.createdAt).toLocaleDateString("it-IT");
+    // PocketBase uses 'created' instead of 'createdAt'
+    const dateFormatted = new Date(expenseItem.created || expenseItem.createdAt).toLocaleDateString("it-IT");
 
     if(isEditing){
         return <EditExpenseForm expense = {expenseItem} onSave={onSave} onCancel={onCancel} onEdit={onEdit}/>

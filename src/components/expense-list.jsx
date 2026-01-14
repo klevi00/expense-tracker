@@ -2,7 +2,10 @@ import ExpenseItem from "./expense-item";
 
 function ExpenseList({expenses, editingId, onDelete, onSave, onCancel, onEdit}){
     const sortedExpenses = [...expenses].sort((a, b) => {
-        return new Date(b.createdAt) - new Date(a.createdAt);
+        // PocketBase uses 'created' instead of 'createdAt'
+        const dateA = new Date(a.created || a.createdAt);
+        const dateB = new Date(b.created || b.createdAt);
+        return dateB - dateA;
     });
 
     if(expenses.length === 0){
