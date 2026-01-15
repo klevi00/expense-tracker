@@ -32,7 +32,7 @@ function ExpenseForm({ onExpenseAdded }) {
             const newExpense = {
                 description,
                 amount: Number(amount),
-                category
+                category,
             };
 
             await pb.collection('expenses').create(newExpense);

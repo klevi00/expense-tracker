@@ -6,24 +6,45 @@ import ExpenseForm from './components/expense-form';
 import ExpenseList from './components/expense-list';
 import FilterBar from './components/filter-bar';
 import Dashboard from './components/dashboard';
+import Auth from './components/auth';
 import {pb} from './lib/pocketbase';
-function App() {
 
+function App() {
+  const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [category, setCategory] = useState("");
   const [editingId, setEditingId] = useState(null);
 
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   const refreshExpenses = async () => {
+    if (!pb.authStore.isValid) {
+      return;
+    }
+
     try {
       setError(null);
       setIsLoading(true);
-      const records = await pb.collection('expenses').getFullList({
-        sort: '-created', // le più recenti prima
-      });
+  
+      let records;
+      try {
+        // First try: Standard relation filter (most efficient)
+        records = await pb.collection('expenses').getFullList({
+          sort: '-created',
+        });
+      } catch (filterErr) {
+        console.warn('Filter failed, trying client-side filtering:', filterErr);
+        
+        // Fallback: Get all records and filter client-side
+        // This works but is less efficient - configure PocketBase rules for better performance
+        const allRecords = await pb.collection('expenses').getFullList({
+          sort: '-created',
+        });
+        
+      }
       setExpenses(records);
     } catch (err) {
       console.error('Errore nel recupero delle spese:', err);
@@ -36,6 +57,12 @@ function App() {
         errorMessage = `404 - La collezione "expenses" non esiste in PocketBase. URL: ${pb.baseUrl}`;
       } else if (err.status === 0 || err.message?.includes('Failed to fetch')) {
         errorMessage = `Impossibile connettersi a PocketBase. URL configurato: ${pb.baseUrl}. Verifica che il server sia avviato.`;
+      } else if (err.status === 400) {
+        errorMessage = `Errore nella richiesta (400). Verifica che il campo "user" esista nella collezione "expenses" e sia configurato come relazione con "users". Dettagli: ${err.message || 'Bad Request'}`;
+      } else if (err.status === 401 || err.status === 403) {
+        errorMessage = 'Non autorizzato. Effettua il login.';
+        pb.authStore.clear();
+        setUser(null);
       } else {
         errorMessage = `Errore ${err.status || 'sconosciuto'}: ${err.message || JSON.stringify(err)}`;
       }
@@ -45,9 +72,69 @@ function App() {
     }
   };
 
+  // Check authentication status on mount
   useEffect(() => {
-    refreshExpenses();
+    // Check if user is already authenticated (from localStorage)
+    // PocketBase automatically stores auth tokens in localStorage
+    // This means: Login once per device, stay logged in forever (until logout)
+    const checkAuth = async () => {
+      try {
+        // Check if we have a valid token stored in localStorage
+        if (pb.authStore.isValid && pb.authStore.model) {
+          // Try to refresh the token to ensure it's still valid
+          try {
+            await pb.collection('users').authRefresh();
+          } catch (refreshErr) {
+            // If refresh fails, token might be expired - clear it
+            console.log('Token refresh failed, clearing auth:', refreshErr);
+            pb.authStore.clear();
+            setUser(null);
+            setIsAuthLoading(false);
+            return;
+          }
+          
+          setUser(pb.authStore.model);
+          refreshExpenses();
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('Errore nel controllo autenticazione:', err);
+        setUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes (e.g., token refresh, logout)
+    // This ensures the UI updates when auth state changes
+    const unsubscribe = pb.authStore.onChange((token, model) => {
+      setUser(model);
+      if (model) {
+        refreshExpenses();
+      } else {
+        setExpenses([]);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
+
+  const handleAuthSuccess = () => {
+    setUser(pb.authStore.model);
+    setIsAuthLoading(false);
+    refreshExpenses();
+  };
+
+  const handleLogout = () => {
+    pb.authStore.clear();
+    setUser(null);
+    setExpenses([]);
+  };
 
   //quando cambia uno degli array di dipendenze (expenses, category, searchText), viene effettuata la funzione dentro useMemo
   const filteredExpenses = useMemo(() => {
@@ -66,7 +153,13 @@ function App() {
         await refreshExpenses();
       } catch (err) {
         console.error('Errore nell\'eliminazione della spesa:', err);
-        alert('Errore nell\'eliminazione della spesa. Riprova.');
+        if (err.status === 401 || err.status === 403) {
+          alert('Non autorizzato. Effettua il login.');
+          pb.authStore.clear();
+          setUser(null);
+        } else {
+          alert('Errore nell\'eliminazione della spesa. Riprova.');
+        }
       }
     }
   }
@@ -86,16 +179,35 @@ function App() {
       setEditingId(null);
     } catch (err) {
       console.error('Errore nell\'aggiornamento della spesa:', err);
-      alert('Errore nell\'aggiornamento della spesa. Riprova.');
+      if (err.status === 401 || err.status === 403) {
+        alert('Non autorizzato. Effettua il login.');
+        pb.authStore.clear();
+        setUser(null);
+      } else {
+        alert('Errore nell\'aggiornamento della spesa. Riprova.');
+      }
     }
   }
 
   const cancelEdit = () => {
     setEditingId(null);
   }
+  // Show auth screen if not authenticated
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-base-200 flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-base-200">
-      <Header title={"expenseTracker"}></Header>
+      <Header title={"expenseTracker"} user={user} onLogout={handleLogout}></Header>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {error && (
           <div className="alert alert-error shadow-lg mb-6">

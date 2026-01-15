@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Calcolatrice from './calculator/Calcolatrice'
-function Header({title}){
+import { pb } from '../lib/pocketbase';
+
+function Header({title, user, onLogout}){
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     return(
@@ -19,7 +21,34 @@ function Header({title}){
                         </div>
                     </div>
                 </div>
-                <div className="navbar-end px-4">
+                <div className="navbar-end px-4 gap-2">
+                    {user && (
+                        <div className="dropdown dropdown-end">
+                            <div tabIndex={0} role="button" className="btn btn-ghost btn-sm">
+                                <div className="avatar placeholder">
+                                    <div className="bg-neutral text-neutral-content rounded-full w-8">
+                                        <span className="text-xs">{user.name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}</span>
+                                    </div>
+                                </div>
+                                <span className="hidden md:inline ml-2">{user.name || user.email}</span>
+                            </div>
+                            <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow-lg border border-base-300">
+                                <li className="px-4 py-2 text-sm text-base-content/70">
+                                    <span className="font-semibold">{user.name || 'Utente'}</span>
+                                    <span className="text-xs block">{user.email}</span>
+                                </li>
+                                <li><hr className="my-1" /></li>
+                                <li>
+                                    <button onClick={onLogout} className="text-error">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        Esci
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    )}
                     <button 
                         className="btn btn-primary btn-sm"
                         onClick={() => setIsModalOpen(true)}
